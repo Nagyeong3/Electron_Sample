@@ -5,11 +5,64 @@
 import { app, protocol, BrowserWindow, webContents } from "electron";
 import { createProtocol, installVueDevtools } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
+
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 //const log = require('electron-log');
 
-const { localStorage } = require('electron-browser-storage');
+//const { localStorage } = require('electron-browser-storage');
+const db = require('electron-db');
+const path = require('path')
+//const location = path.join(__dirname, 'mydb.json')
+type MyObject = {
+  key: string,
+  value: string,
+
+
+}
+
+const obj: MyObject = {
+  key: "null",
+  value: "null",
+
+
+}
+function createDB() {
+  db.createTable('TestStorage009', (ttt: any) => {
+    console.log("what is ttt? " + ttt);
+    if (ttt) {
+      console.log("dataTable successfully create!")
+    } else {
+      console.log("error in Creating dataTable ")
+    }
+  })
+}
+
+function insertDB() {
+
+  db.insertTableContent("TestStorage009", obj, (ttt: any) => {
+    if (ttt) {
+      console.log("dataTable successfully insert!")
+      console.log("insert data : " + JSON.stringify(obj))
+    }
+
+  })
+}
+function getDB() {
+  db.getAll('TestStorage009', (succ: any, data: any) => {
+    console.log("DB에 저장된 data:  " + JSON.stringify(data))
+  })
+}
+
+// let obj = new Object();
+// obj.
+// db.insertTableContent("medicine", obj, (ttt:any) => {
+//   // succ - boolean, tells if the call is successful
+//   console.log("Success?: " + ttt);
+
+// });
+
+
 
 
 // Scheme must be registered before the app is ready
@@ -50,14 +103,12 @@ async function createWindow() {
 
   }
 
-  win.webContents.executeJavaScript('localStorage.getItem("loglevel:webpack-dev-server");', true)
-    .then(result => {
-      console.log("createWindow:")
-      console.log(JSON.stringify(result))
-    });
+  // win.webContents.executeJavaScript('localStorage.setItem("pet","cat");', true)
+  //   .then(result => {
+  //     console.log("createWindow:")
+  //     console.log(JSON.stringify(result))
+  //   });
 
-  console.log("createWindow id?  " + win.id);
-  return win;
 }
 
 
@@ -102,7 +153,7 @@ app.on("ready", async () => {
   }
   createWindow();
 
-
+  createDB();
 
   //객체의 주소나 위에서 생성
   // const leng = BrowserWindow.getAllWindows().length
@@ -116,14 +167,18 @@ app.on("ready", async () => {
         if (result == "loglevel:webpack-dev-server") {
           element.webContents.executeJavaScript('localStorage.getItem("loglevel:webpack-dev-server");', true)
             .then(result => {
+              obj.value = result;
               console.log("app ready:")
               console.log(JSON.stringify(result))
+
+              insertDB();
+              getDB();
             });
         }
       });
 
-  });
 
+  });
 
 
 

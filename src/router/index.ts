@@ -25,6 +25,7 @@ const routes: Array<RouteConfig> = [
     component: () =>
       import(/* webpackChunkName: "stock" */ "../views/Stock.vue"),
   },
+
 ];
 
 const router = new VueRouter({

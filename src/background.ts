@@ -8,39 +8,27 @@ import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
-//const log = require('electron-log');
-
-//const { localStorage } = require('electron-browser-storage');
 const db = require('electron-db');
-const path = require('path')
+
+let dataBahnWindow: BrowserWindow;
+
+
 //const location = path.join(__dirname, 'mydb.json')
-type MyObject = {
-  key: string,
-  value: string,
 
-
-}
-
-const obj: MyObject = {
-  key: "null",
-  value: "null",
-
-
-}
-function createDB() {
-  db.createTable('TestStorage009', (ttt: any) => {
-    console.log("what is ttt? " + ttt);
-    if (ttt) {
+//DB생성함수
+function createDB(DBName: string) {
+  db.createTable(DBName, (succ: any) => {
+    if (succ) {
       console.log("dataTable successfully create!")
     } else {
       console.log("error in Creating dataTable ")
     }
   })
 }
+//DB 데이터 추가 함수
+function insertDB(DBName: string, obj: Object) {
 
-function insertDB() {
-
-  db.insertTableContent("TestStorage009", obj, (ttt: any) => {
+  db.insertTableContent(DBName, obj, (ttt: any) => {
     if (ttt) {
       console.log("dataTable successfully insert!")
       console.log("insert data : " + JSON.stringify(obj))
@@ -48,19 +36,47 @@ function insertDB() {
 
   })
 }
+//DB데이터 수정 함수
+function changeValue() {
+
+}
+//DB내 정보 출력 함수
 function getDB() {
-  db.getAll('TestStorage009', (succ: any, data: any) => {
+  db.getAll('UserStorage', (succ: any, data: any) => {
     console.log("DB에 저장된 data:  " + JSON.stringify(data))
   })
 }
 
-// let obj = new Object();
-// obj.
-// db.insertTableContent("medicine", obj, (ttt:any) => {
-//   // succ - boolean, tells if the call is successful
-//   console.log("Success?: " + ttt);
+//DB 존재여부 검사 함수
+function validDB(DBName: string) {
+  //console.log(db.valid('UserStorages'))
+  try {
+    if (db.valid(DBName)) {
+      console.log("valid");
+      return true;
+    }
+  } catch (e: any) {
+    console.log("unvalid");
+    return false;
+  }
+}
 
-// });
+//DB레코드 삭제 함수
+function deleteRecords(id: number) {
+  db.deleteRow('UserStorage', { "id": id }, (succ: any) => {
+    console.log("data delete complete??")
+  })
+}
+
+//DBTable삭제 함수
+function clearTable(DBName: string) {
+  db.clearTable(DBName, (succ: any) => {
+    if (succ)
+      console.log("clear success")
+    getDB();
+  })
+}
+
 
 
 
@@ -103,15 +119,114 @@ async function createWindow() {
 
   }
 
-  // win.webContents.executeJavaScript('localStorage.setItem("pet","cat");', true)
-  //   .then(result => {
-  //     console.log("createWindow:")
-  //     console.log(JSON.stringify(result))
-  //   });
+  dataBahnWindow = win;
 
 }
 
+app.on("before-quit", async () => {
+  console.log("before-quit 진입")
 
+  type MyObject = {
+    key: string,
+    value: string,
+  }
+
+  const obj: MyObject = {
+    key: "pet",
+    value: "null",
+  }
+
+  console.log(dataBahnWindow)
+  dataBahnWindow.webContents.executeJavaScript('localStorage.length;', true)
+    .then(result => {
+      console.log(result)
+      for (let i = 0; i < result; i++) {
+        let keys: string;
+        dataBahnWindow.webContents.executeJavaScript('localStorage.key(' + i + ')', true)
+          .then(result => {
+            keys = result;
+            console.log(keys)
+            if (keys == "pet") {
+              console.log("if문안에 들어왔는지?? ")
+              // dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("pet");', true)
+              //   .then(result => {
+              //     //obj.value = result;
+              //     console.log(result)
+              //     console.log("app ready: getting value. . .")
+              //     console.log(JSON.stringify(result))
+
+
+              //     if (validDB('UserStorages')) {
+              //       console.log("DB존재합니다 insert시작. . .")
+              //       //insertDB('UserStorage', obj);
+              //     }
+              //     else {
+              //       console.log("DB존재하지 않습니다. create시작. . .")
+              //       createDB('UserStorages');
+              //       //insertDB('UserStorages', obj);
+              //     }
+
+              //     //deleteRecords(1672362891330);
+
+              //   });
+            }
+          })
+
+      }
+
+
+    });
+
+  // console.log(keys)
+  // console.log(JSON.stringify(keys))
+  // BrowserWindow.getAllWindows().forEach((element: BrowserWindow, index: number) => {
+  //   dataBahnWindow.webContents.executeJavaScript('localStorage.key()', true)
+
+  //   type MyObject = {
+  //     key: string,
+  //     value: string,
+  //   }
+
+  //   const obj: MyObject = {
+  //     key: "pet",
+  //     value: "null",
+  //   }
+
+
+  //   //`localStorage.key(${a})`
+  //   element.webContents.executeJavaScript('localStorage.key(0);', true)
+  //     .then(result => {
+  //       if (result == "pet") {
+
+  //         element.webContents.executeJavaScript('localStorage.getItem("pet");', true)
+  //           .then(result => {
+  //             obj.value = result;
+  //             console.log("app ready: getting value. . .")
+  //             console.log(JSON.stringify(result))
+
+
+  //             if (validDB('UserStorages')) {
+  //               console.log("DB존재합니다 insert시작. . .")
+  //               insertDB('UserStorage', obj);
+  //             }
+  //             else {
+  //               console.log("DB존재하지 않습니다. create시작. . .")
+  //               createDB('UserStorages');
+  //               insertDB('UserStorages', obj);
+  //             }
+
+  //             //deleteRecords(1672362891330);
+
+  //           });
+  //       }
+  //     });
+
+
+  // });
+
+  //console.log(BrowserWindow.getAllWindows())
+
+})
 // Quit when all windows are closed.
 app.on("window-all-closed", () => {
   // On macOS it is common for applications and their menu bar
@@ -125,9 +240,12 @@ app.on("window-all-closed", () => {
 app.on("activate", () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
+
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+
+
 });
 
 // This method will be called when Electron has finished
@@ -136,11 +254,6 @@ app.on("activate", () => {
 
 app.on("ready", async () => {
   if (isDevelopment && !process.env.IS_TEST) {
-    //Install Vue Devtools
-    // localStorage.getItem("loglevel:webpack-dev-server").then((data: any) => {
-    //   console.log("@@@")
-    //   console.log(data);
-    // })
 
     try {
       await installExtension(VUEJS_DEVTOOLS);
@@ -153,32 +266,57 @@ app.on("ready", async () => {
   }
   createWindow();
 
-  createDB();
+
+  // dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("pet");', true)
+  //   .then(result => {
+  //     console.log(result)
+  //   });
 
   //객체의 주소나 위에서 생성
   // const leng = BrowserWindow.getAllWindows().length
   // const win1_0 = BrowserWindow.getAllWindows()[0]
   //const win1_1 = BrowserWindow.getAllWindows()[1]
 
-  BrowserWindow.getAllWindows().forEach((element: BrowserWindow) => {
+  // BrowserWindow.getAllWindows().forEach((element: BrowserWindow) => {
+  //   type MyObject = {
+  //     key: string,
+  //     value: string,
+  //   }
 
-    element.webContents.executeJavaScript('localStorage.key(0);', true)
-      .then(result => {
-        if (result == "loglevel:webpack-dev-server") {
-          element.webContents.executeJavaScript('localStorage.getItem("loglevel:webpack-dev-server");', true)
-            .then(result => {
-              obj.value = result;
-              console.log("app ready:")
-              console.log(JSON.stringify(result))
-
-              insertDB();
-              getDB();
-            });
-        }
-      });
+  //   const obj: MyObject = {
+  //     key: "pet",
+  //     value: "null",
+  //   }
 
 
-  });
+  //   element.webContents.executeJavaScript('localStorage.key(0);', true)
+  //     .then(result => {
+  //       if (result == "pet") {
+  //         element.webContents.executeJavaScript('localStorage.getItem("pet");', true)
+  //           .then(result => {
+  //             obj.value = result;
+  //             console.log("app ready: getting value. . .")
+  //             console.log(JSON.stringify(result))
+
+
+  //             if (validDB('UserStorages')) {
+  //               console.log("DB존재합니다 insert시작. . .")
+  //               insertDB('UserStorage', obj);
+  //             }
+  //             else {
+  //               console.log("DB존재하지 않습니다. create시작. . .")
+  //               createDB('UserStorages');
+  //               insertDB('UserStorages', obj);
+  //             }
+
+  //             //deleteRecords(1672362891330);
+
+  //           });
+  //       }
+  //     });
+
+
+  // });
 
 
 

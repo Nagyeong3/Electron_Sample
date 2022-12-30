@@ -37,7 +37,15 @@ function insertDB(DBName: string, obj: Object) {
   })
 }
 //DB데이터 수정 함수
-function changeValue() {
+function changeValue(DBName: string, mykey: Object, changeValue: Object) {
+  db.updateRow(DBName, mykey, changeValue, (succ: any) => {
+    console.log("change value 확인")
+    console.log(succ)
+    if (succ) {
+      console.log("change success")
+      getDB();
+    }
+  })
 
 }
 //DB내 정보 출력 함수
@@ -265,7 +273,7 @@ app.on("ready", async () => {
     }
   }
   createWindow();
-
+  clearTable('UserStorage');
 
   // dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("pet");', true)
   //   .then(result => {
@@ -277,46 +285,47 @@ app.on("ready", async () => {
   // const win1_0 = BrowserWindow.getAllWindows()[0]
   //const win1_1 = BrowserWindow.getAllWindows()[1]
 
-  // BrowserWindow.getAllWindows().forEach((element: BrowserWindow) => {
-  //   type MyObject = {
-  //     key: string,
-  //     value: string,
-  //   }
+  BrowserWindow.getAllWindows().forEach((element: BrowserWindow) => {
+    type MyObject = {
+      key: string,
+      value: string,
+    }
 
-  //   const obj: MyObject = {
-  //     key: "pet",
-  //     value: "null",
-  //   }
-
-
-  //   element.webContents.executeJavaScript('localStorage.key(0);', true)
-  //     .then(result => {
-  //       if (result == "pet") {
-  //         element.webContents.executeJavaScript('localStorage.getItem("pet");', true)
-  //           .then(result => {
-  //             obj.value = result;
-  //             console.log("app ready: getting value. . .")
-  //             console.log(JSON.stringify(result))
+    const obj: MyObject = {
+      key: "pet",
+      value: "null",
+    }
 
 
-  //             if (validDB('UserStorages')) {
-  //               console.log("DB존재합니다 insert시작. . .")
-  //               insertDB('UserStorage', obj);
-  //             }
-  //             else {
-  //               console.log("DB존재하지 않습니다. create시작. . .")
-  //               createDB('UserStorages');
-  //               insertDB('UserStorages', obj);
-  //             }
-
-  //             //deleteRecords(1672362891330);
-
-  //           });
-  //       }
-  //     });
+    element.webContents.executeJavaScript('localStorage.key(0);', true)
+      .then(result => {
+        if (result == "pet") {
+          element.webContents.executeJavaScript('localStorage.getItem("pet");', true)
+            .then(result => {
+              obj.value = result;
+              console.log("app ready: getting value. . .")
+              console.log(JSON.stringify(result))
 
 
-  // });
+              if (validDB('UserStorage')) {
+                console.log("DB존재합니다 insert시작. . .")
+                insertDB('UserStorage', obj);
+                changeValue('UserStorage', { 'key': 'food' }, { 'value': 'icecream' });
+              }
+              else {
+                console.log("DB존재하지 않습니다. create시작. . .")
+                createDB('UserStorage');
+                insertDB('UserStorage', obj);
+              }
+
+              //deleteRecords(1672362891330);
+
+            });
+        }
+      });
+
+
+  });
 
 
 

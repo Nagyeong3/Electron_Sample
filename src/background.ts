@@ -13,48 +13,6 @@ const db = require('electron-db');
 let dataBahnWindow: BrowserWindow;
 
 
-//const location = path.join(__dirname, 'mydb.json')
-
-//DB생성함수
-function createDB(DBName: string) {
-  db.createTable(DBName, (succ: any) => {
-    if (succ) {
-      console.log("dataTable successfully create!")
-    } else {
-      console.log("error in Creating dataTable ")
-    }
-  })
-}
-//DB 데이터 추가 함수
-function insertDB(DBName: string, obj: Object) {
-
-  db.insertTableContent(DBName, obj, (ttt: any) => {
-    if (ttt) {
-      console.log("dataTable successfully insert!")
-      console.log("insert data : " + JSON.stringify(obj))
-    }
-
-  })
-}
-//DB데이터 수정 함수
-function changeValue(DBName: string, mykey: Object, changeValue: Object) {
-  db.updateRow(DBName, mykey, changeValue, (succ: any) => {
-    console.log("change value 확인")
-    console.log(succ)
-    if (succ) {
-      console.log("change success")
-      getDB();
-    }
-  })
-
-}
-//DB내 정보 출력 함수
-function getDB() {
-  db.getAll('UserStorage', (succ: any, data: any) => {
-    console.log("DB에 저장된 data:  " + JSON.stringify(data))
-  })
-}
-
 //DB 존재여부 검사 함수
 function validDB(DBName: string) {
   //console.log(db.valid('UserStorages'))
@@ -67,6 +25,51 @@ function validDB(DBName: string) {
     console.log("unvalid");
     return false;
   }
+}
+
+//DB생성함수
+function createDB(DBName: string) {
+  db.createTable(DBName, (succ: any) => {
+    if (succ) {
+      console.log("dataTable successfully create!")
+    } else {
+      console.log("error in Creating dataTable ")
+    }
+  })
+}
+
+//DB 데이터 추가 함수
+function insertDB(DBName: string, obj: Object) {
+
+  db.insertTableContent(DBName, obj, (ttt: any) => {
+    if (ttt) {
+      console.log("dataTable successfully insert!")
+      console.log("insert data : " + JSON.stringify(obj))
+    }
+
+  })
+}
+
+//DB데이터 수정 함수
+function changeValue(DBName: string, mykey: object, changeValue: Object) {
+  db.updateRow(DBName, mykey, changeValue, (succ: any, msg: any) => {
+    console.log("change value 확인")
+    console.log(succ)
+    if (succ) {
+      console.log("change success")
+      getDB();
+    } else {
+      console.log(msg)
+    }
+  })
+
+}
+
+//DB내 정보 출력 함수
+function getDB() {
+  db.getAll('UserStorage', (succ: any, data: any) => {
+    console.log("DB에 저장된 data:  " + JSON.stringify(data))
+  })
 }
 
 //DB레코드 삭제 함수
@@ -120,6 +123,8 @@ async function createWindow() {
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
     // win.loadURL("https://dev.data-bahn.com");
     if (!process.env.IS_TEST) win.webContents.openDevTools();
+
+
   } else {
     createProtocol("app");
     // Load the index.html when not in development
@@ -131,8 +136,9 @@ async function createWindow() {
 
 }
 
-app.on("before-quit", async () => {
-  console.log("before-quit 진입")
+app.on("before-quit", () => {
+
+  let length = 0;
 
   type MyObject = {
     key: string,
@@ -144,96 +150,91 @@ app.on("before-quit", async () => {
     value: "null",
   }
 
-  console.log(dataBahnWindow)
-  dataBahnWindow.webContents.executeJavaScript('localStorage.length;', true)
+  let where = { 'key': 'pet' }
+  let set = { 'value': 'dogg' }
+  // const leng = BrowserWindow.getAllWSindows().length
+  const win1_0 = BrowserWindow.getAllWindows()[0]
+  //const win1_1 = BrowserWindow.getAllWindows()[1]
+  win1_0.webContents.executeJavaScript('localStorage.length;', true)
     .then(result => {
       console.log(result)
-      for (let i = 0; i < result; i++) {
-        let keys: string;
-        dataBahnWindow.webContents.executeJavaScript('localStorage.key(' + i + ')', true)
-          .then(result => {
-            keys = result;
-            console.log(keys)
-            if (keys == "pet") {
-              console.log("if문안에 들어왔는지?? ")
-              // dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("pet");', true)
-              //   .then(result => {
-              //     //obj.value = result;
-              //     console.log(result)
-              //     console.log("app ready: getting value. . .")
-              //     console.log(JSON.stringify(result))
+      length = result;
+    })
+  //  console.log(db.getAllkeys());
+  win1_0.webContents.executeJavaScript('Object.keys(localStorage)', true)
+    .then(result => {
+      // console.log(JSON.stringify(result))
+      // console.log(result)
+      let str = JSON.stringify(result)
+      let splitted = str.split('[')
+      let i = 0;
 
+      while (1) {
+        let s = splitted[1].split('"')
 
-              //     if (validDB('UserStorages')) {
-              //       console.log("DB존재합니다 insert시작. . .")
-              //       //insertDB('UserStorage', obj);
-              //     }
-              //     else {
-              //       console.log("DB존재하지 않습니다. create시작. . .")
-              //       createDB('UserStorages');
-              //       //insertDB('UserStorages', obj);
-              //     }
+        // console.log(s)
+        if (s[i] == "pet") {
+          dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("pet");', true)
+            .then(result => {
+              obj.value = result;
+              console.log(JSON.stringify(result))
 
-              //     //deleteRecords(1672362891330);
+              if (validDB('UserStorages')) {
+                console.log("DB존재합니다 insert시작. . .")
+                insertDB('UserStorage', obj);
+                changeValue('UserStorage', where, set)
+              }
+              else {
+                console.log("DB존재하지 않습니다. create시작. . .")
+                createDB('UserStorages');
+                insertDB('UserStorages', obj);
+                changeValue('UserStorage', where, set)
+              }
 
-              //   });
-            }
-          })
+            })
+          return 0;
+
+        } else {
+          console.log(s[i])
+          i++;
+        }
+        if (i == length * 2 + 1) {
+          console.log("해당키 없음")
+          return 0;
+        }
 
       }
-
-
+      //console.log(splitted)
+      // let str = result.split(',', 2)
+      // console.log();
     });
 
-  // console.log(keys)
-  // console.log(JSON.stringify(keys))
-  // BrowserWindow.getAllWindows().forEach((element: BrowserWindow, index: number) => {
-  //   dataBahnWindow.webContents.executeJavaScript('localStorage.key()', true)
-
-  //   type MyObject = {
-  //     key: string,
-  //     value: string,
-  //   }
-
-  //   const obj: MyObject = {
-  //     key: "pet",
-  //     value: "null",
-  //   }
 
 
-  //   //`localStorage.key(${a})`
-  //   element.webContents.executeJavaScript('localStorage.key(0);', true)
-  //     .then(result => {
-  //       if (result == "pet") {
-
-  //         element.webContents.executeJavaScript('localStorage.getItem("pet");', true)
-  //           .then(result => {
-  //             obj.value = result;
-  //             console.log("app ready: getting value. . .")
-  //             console.log(JSON.stringify(result))
 
 
-  //             if (validDB('UserStorages')) {
-  //               console.log("DB존재합니다 insert시작. . .")
-  //               insertDB('UserStorage', obj);
-  //             }
-  //             else {
-  //               console.log("DB존재하지 않습니다. create시작. . .")
-  //               createDB('UserStorages');
-  //               insertDB('UserStorages', obj);
-  //             }
+  //getAllkeys()
+  // result 에 key 배열
+  //result.foreach( (key: any) => { if key == pet { logic() }}})
 
-  //             //deleteRecords(1672362891330);
-
-  //           });
-  //       }
-  //     });
+  // dataBahnWindow.webContents.executeJavaScript('localStorage.length;', true)
+  //   .then(result => {
+  //     console.log(result)
+  //     for (let i = 0; i < result; i++) {
+  //       let keys: string;
+  //       dataBahnWindow.webContents.executeJavaScript('localStorage.key(' + i + ')', true)
+  //         .then(result => {
+  //           keys = result;
+  //           console.log(keys)
 
 
-  // });
 
-  //console.log(BrowserWindow.getAllWindows())
+  //         })
 
+  //     }
+
+
+  //   });
 })
 // Quit when all windows are closed.
 app.on("window-all-closed", () => {
@@ -252,13 +253,22 @@ app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+  console.log("activate!!!!")
+  console.log("activate!!!!")
 
+  console.log("activate!!!!")
+
+  console.log("activate!!!!")
+
+
+  // dataBahnWindow.webContents.addListener
 
 });
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
+
 
 app.on("ready", async () => {
   if (isDevelopment && !process.env.IS_TEST) {
@@ -273,83 +283,52 @@ app.on("ready", async () => {
     }
   }
   createWindow();
-  clearTable('UserStorage');
+  clearTable('UserStorage')
+  let length = 0;
 
-  // dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("pet");', true)
-  //   .then(result => {
-  //     console.log(result)
-  //   });
-
-  //객체의 주소나 위에서 생성
-  // const leng = BrowserWindow.getAllWindows().length
-  // const win1_0 = BrowserWindow.getAllWindows()[0]
+  // const leng = BrowserWindow.getAllWSindows().length
+  const win1_0 = BrowserWindow.getAllWindows()[0]
   //const win1_1 = BrowserWindow.getAllWindows()[1]
+  win1_0.webContents.executeJavaScript('localStorage.length;', true)
+    .then(result => {
+      console.log(result)
+      length = result;
+    })
+  //  console.log(db.getAllkeys());
+  win1_0.webContents.executeJavaScript('Object.keys(localStorage)', true)
+    .then(result => {
+      // console.log(JSON.stringify(result))
+      console.log(result)
+      let str = JSON.stringify(result)
+      let splitted = str.split('[')
+      let i = 0;
 
-  BrowserWindow.getAllWindows().forEach((element: BrowserWindow) => {
-    type MyObject = {
-      key: string,
-      value: string,
-    }
+      while (1) {
+        let s = splitted[1].split('"')
 
-    const obj: MyObject = {
-      key: "pet",
-      value: "null",
-    }
+        // console.log(s)
+        if (s[i] == "pet") {
+          console.log(s[i])
+          return 0;
 
+        } else {
 
-    element.webContents.executeJavaScript('localStorage.key(0);', true)
-      .then(result => {
-        if (result == "pet") {
-          element.webContents.executeJavaScript('localStorage.getItem("pet");', true)
-            .then(result => {
-              obj.value = result;
-              console.log("app ready: getting value. . .")
-              console.log(JSON.stringify(result))
-
-
-              if (validDB('UserStorage')) {
-                console.log("DB존재합니다 insert시작. . .")
-                insertDB('UserStorage', obj);
-                changeValue('UserStorage', { 'key': 'food' }, { 'value': 'icecream' });
-              }
-              else {
-                console.log("DB존재하지 않습니다. create시작. . .")
-                createDB('UserStorage');
-                insertDB('UserStorage', obj);
-              }
-
-              //deleteRecords(1672362891330);
-
-            });
+          console.log(s[i])
+          i++;
         }
-      });
+        if (i == length * 2 + 1) {
+          console.log("해당키 없음")
+          return 0;
+        }
 
+      }
 
-  });
+      //console.log(splitted)
+      // let str = result.split(',', 2)
+      // console.log();
+    });
 
-
-
-
-  //value값 출력
-  // win1_0.webContents.executeJavaScript('localStorage.getItem("loglevel:webpack-dev-server");', true)
-  //   .then(result => {
-  //     console.log("app ready:")
-  //     console.log(JSON.stringify(result))
-  //   });
-  // console.log("ready id?  " + win1_0.id);
-
-  //key값 출력
-  // win1_0.webContents.executeJavaScript('localStorage.key(0);', true)
-  //   .then(result => {
-  //     console.log("app ready:")
-  //     console.log(result)
-  //   });
-
-
-
-
-
-});
+})
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {
@@ -365,3 +344,4 @@ if (isDevelopment) {
     });
   }
 }
+

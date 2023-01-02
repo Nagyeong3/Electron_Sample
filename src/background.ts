@@ -2,9 +2,10 @@
 
 
 /**electron 렌더러 프로세스 생성 -> BrowserWindow객체 사용**/
-import { app, protocol, BrowserWindow, webContents } from "electron";
+import { app, protocol, BrowserWindow, webContents, ipcMain } from "electron";
 import { createProtocol, installVueDevtools } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
+
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -137,7 +138,7 @@ async function createWindow() {
 }
 
 app.on("before-quit", () => {
-
+  console.log("before quit")
   let length = 0;
 
   type MyObject = {
@@ -153,22 +154,31 @@ app.on("before-quit", () => {
   let where = { 'key': 'pet' }
   let set = { 'value': 'dogg' }
   // const leng = BrowserWindow.getAllWSindows().length
-  const win1_0 = BrowserWindow.getAllWindows()[0]
-  //const win1_1 = BrowserWindow.getAllWindows()[1]
-  win1_0.webContents.executeJavaScript('localStorage.length;', true)
+  console.log("a")
+
+  const test = dataBahnWindow.webContents;
+  console.log("test : " + test)
+
+  // console.log("win1_0 : " + JSON.stringify(win1_0))
+  // console.log("win1_0 webcontents : " + JSON.stringify(win1_0.webContents))
+
+  dataBahnWindow.webContents.executeJavaScript('localStorage.length', true)
     .then(result => {
+      //console.log("c")
       console.log(result)
       length = result;
     })
   //  console.log(db.getAllkeys());
-  win1_0.webContents.executeJavaScript('Object.keys(localStorage)', true)
+  dataBahnWindow.webContents.executeJavaScript('Object.keys(localStorage)', true)
     .then(result => {
       // console.log(JSON.stringify(result))
       // console.log(result)
       let str = JSON.stringify(result)
       let splitted = str.split('[')
       let i = 0;
+      //for (let i = 0; i < 5; i++) {
 
+      //}
       while (1) {
         let s = splitted[1].split('"')
 
@@ -177,6 +187,7 @@ app.on("before-quit", () => {
           dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("pet");', true)
             .then(result => {
               obj.value = result;
+              // console.log("1");
               console.log(JSON.stringify(result))
 
               if (validDB('UserStorages')) {
@@ -195,10 +206,12 @@ app.on("before-quit", () => {
           return 0;
 
         } else {
+          // console.log("2");
           console.log(s[i])
           i++;
         }
         if (i == length * 2 + 1) {
+          // console.log("3");
           console.log("해당키 없음")
           return 0;
         }
@@ -238,13 +251,62 @@ app.on("before-quit", () => {
 })
 // Quit when all windows are closed.
 app.on("window-all-closed", () => {
+
+
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
+  //console.log(dataBahnWindow)
   if (process.platform !== "darwin") {
     app.quit();
 
   }
 });
+
+function DBLogic() {
+  let length = 0;
+
+  // const leng = BrowserWindow.getAllWSindows().length
+  const win1_0 = BrowserWindow.getAllWindows()[0]
+  //const win1_1 = BrowserWindow.getAllWindows()[1]
+  dataBahnWindow.webContents.executeJavaScript('localStorage.length;', true)
+    .then(result => {
+      console.log(result)
+      length = result;
+    })
+  //  console.log(db.getAllkeys());
+  dataBahnWindow.webContents.executeJavaScript('Object.keys(localStorage)', true)
+    .then(result => {
+      // console.log(JSON.stringify(result))
+      console.log(result)
+      let str = JSON.stringify(result)
+      let splitted = str.split('[')
+      let i = 0;
+
+      while (1) {
+        let s = splitted[1].split('"')
+
+        // console.log(s)
+        if (s[i] == "pet") {
+          console.log(s[i])
+          return 0;
+
+        } else {
+
+          console.log(s[i])
+          i++;
+        }
+        if (i == length * 2 + 1) {
+          console.log("해당키 없음")
+          return 0;
+        }
+
+      }
+
+      //console.log(splitted)
+      // let str = result.split(',', 2)
+      // console.log();
+    });
+}
 
 app.on("activate", () => {
   // On macOS it's common to re-create a window in the app when the
@@ -260,10 +322,12 @@ app.on("activate", () => {
 
   console.log("activate!!!!")
 
+  const win1_0 = BrowserWindow.getAllWindows()[0]
 
   // dataBahnWindow.webContents.addListener
 
 });
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -328,7 +392,13 @@ app.on("ready", async () => {
       // console.log();
     });
 
+
+  //win1_0.webContents.executeJavaScript('window.addEventListener("storage",()=>{window.alert(Object.keys(localStorage)); return Object.keys(localStorage)  })').then((result) => { })
+
 })
+
+
+
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {
@@ -344,4 +414,5 @@ if (isDevelopment) {
     });
   }
 }
+
 

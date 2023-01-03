@@ -6,7 +6,7 @@ import { app, protocol, BrowserWindow, webContents, ipcMain } from "electron";
 import { createProtocol, installVueDevtools } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 
-
+const { dialog } = require('electron')
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 const db = require('electron-db');
@@ -106,53 +106,57 @@ function DBLogic() {
 
   let where = { 'key': 'vuex' }
   let set = { 'value': 'dogg' }
-  dataBahnWindow.webContents.executeJavaScript('localStorage.length', true)
-    .then(result => {
-      //console.log(result)
-      length = result;
-    })
+  if (dataBahnWindow && dataBahnWindow.webContents) {
+    dataBahnWindow.webContents.executeJavaScript('localStorage.length', true)
+      .then(result => {
+        //console.log(result)
+        length = result;
+        dataBahnWindow.webContents.executeJavaScript('Object.keys(localStorage)', true)
+          .then(result => {
+            //console.log(result)
+            let str = JSON.stringify(result)
+            let splitted = str.split('[')
 
-  dataBahnWindow.webContents.executeJavaScript('Object.keys(localStorage)', true)
-    .then(result => {
-      //console.log(result)
-      let str = JSON.stringify(result)
-      let splitted = str.split('[')
+            let s = splitted[1].split('"')
 
-      let s = splitted[1].split('"')
+            for (let i = 0; i < length * 2 + 1; i++) {
 
-      for (let i = 0; i < length * 2 + 1; i++) {
+              //console.log(dataBahnWindow.webContents)
+              if (s[i] == "vuex") {
 
-        //console.log(dataBahnWindow.webContents)
-        if (s[i] == "vuex") {
+                dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("vuex");', true)
+                  .then(result => {
+                    //console.log(result)
 
-          dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("vuex");', true)
-            .then(result => {
-              //console.log(result)
+                    obj.value = result;
+                    if (validDB('UserStorage')) {
+                      console.log("DB존재합니다 insert시작. . .")
+                      insertDB('UserStorage', obj);
+                      //changeValue('UserStorage', where, set)
+                    }
+                    else {
+                      console.log("DB존재하지 않습니다. create시작. . .")
+                      createDB('UserStorage');
+                      insertDB('UserStorage', obj);
+                      //changeValue('UserStorage', where, set)
+                    }
 
-              obj.value = result;
-              if (validDB('UserStorage')) {
-                console.log("DB존재합니다 insert시작. . .")
-                insertDB('UserStorage', obj);
-                //changeValue('UserStorage', where, set)
+
+
+                  })
+                  .catch(error => console.log(error))
+                return 0;
               }
-              else {
-                console.log("DB존재하지 않습니다. create시작. . .")
-                createDB('UserStorage');
-                insertDB('UserStorage', obj);
-                //changeValue('UserStorage', where, set)
-              }
+            }
+          })
+          .catch(error => console.log(error));
+      })
 
 
+  } else {
+    console.log(" data bahn window 혹은 webcontents가 비어있습니다.")
+  }
 
-            })
-            .catch(error => console.log(error))
-          return 0;
-        }
-      }
-
-
-    })
-    .catch(error => console.log(error));
 
 
 
@@ -188,8 +192,8 @@ async function createWindow() {
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
-    await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
-    //await win.loadURL("https://dev.data-bahn.com");
+    //await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
+    await win.loadURL("https://dev.data-bahn.com");
     if (!process.env.IS_TEST) win.webContents.openDevTools();
 
 
@@ -201,16 +205,38 @@ async function createWindow() {
   }
 
   dataBahnWindow = win;
-  dataBahnWindow.on('close', (event) => {
+  const options = {
+    type: 'question',
+    buttons: ['yes', 'no'],
+    message: '정말 종료하시겠습니까?',
 
-    //dataBahnWindow.webContents.executeJavaScript("alert('program exit')")
-    try {
-      DBLogic();
-    } catch (error) {
-      console.log(error)
-      console.log("DBLogic함수 try-catch error ")
-    }
-  })
+  }
+  if (dataBahnWindow) {
+    dataBahnWindow.webContents.executeJavaScript("window.addEventListener('beforeunload',function(event){event.returnValue='exit?'})")
+    dataBahnWindow.on('close', (event) => {
+
+      //dataBahnWindow.webContents.executeJavaScript("alert('program exit')")
+      //정말로 종료하시겠습니까? 확인 -> 
+      dialog.showMessageBox(options).then(function (res) {
+        if (res.response == 1) {  //아니오
+          console.log("showmessage response 1")
+        } else {  //예
+          console.log("showmessage response 0")
+          dataBahnWindow.destroy();
+          app.quit();
+        }
+      })
+      try {
+        DBLogic();
+      } catch (error) {
+        console.log(error)
+        console.log("DBLogic함수 try-catch error ")
+      }
+    })
+  } else {
+    console.log("win 객체가 비어있습니다.")
+  }
+
 }
 
 
@@ -228,7 +254,7 @@ app.on("ready", async () => {
   }
   createWindow();
   getDB();
-  //clearTable('UserStorage')
+  clearTable('UserStorage')
 
 
 

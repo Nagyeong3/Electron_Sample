@@ -21,15 +21,11 @@ let db = new Datastore({
   filename: `${app.getPath("userData")}/userStorage`, autoload: true
 })
 
-/**electron localStorage접근
-npm install electron-browser-storage**/
-// const { localStorage } = require('electron-browser-storage')
-
 
 let dataBahnWindow: BrowserWindow;
 
 //localStorage 데이터를 없애고 DB에 있던 데이터를 집어 넣는 함수
-async function SetLocalStorage(win: BrowserWindow) {
+async function SetLocalStorage(win: BrowserWindow, isOnlyVuex = false) {
 
 
   //localStorage 비우기
@@ -37,67 +33,72 @@ async function SetLocalStorage(win: BrowserWindow) {
     .catch(error => console.log(error));
 
   //내가 원하는 값으로 localStorage세팅
+  let keyArr: any;
+  let valueArr: any;
+
   if (db) {
     console.log("db존재합니다 ")
-
-    db.find({}, (err: any, data: any) => {
-      if (err) {
-        console.log("setLocalStorage함수 내부 error :" + err)
-      }
-      else {
-        let keyArr = Object.keys(data[0]);
-        let valueArr = Object.values(data[0])
-        if (keyArr != null) {
-          let idx = 0;
-          keyArr.forEach(mykey => {
-            if (mykey != "_id") {
-              win.webContents.executeJavaScript("localStorage.setItem('" + mykey + "','" + valueArr[idx++] + "');")
-                .then(result => {
-                  console.log(`localStorage내부 setItem성공 key:${mykey}`)
-                })
-                .catch(error => {
-                  console.log("setLocalStorage함수 호출 시 ");
-                  console.log(error);
-                })
-            }
-
-          })
+    if (isOnlyVuex) {
+      db.find({}, (err: any, data: any) => {
+        if (err) {
+          console.log("setLocalStorage함수 내부 error :" + err)
+        } else {
+          if (data[0] != null) {
+            keyArr = Object.keys(data[0]);
+            valueArr = Object.values(data[0])
+            keyArr.forEach((mykey: any, index: number) => {
+              if (mykey == "vuex") {
+                win.webContents.executeJavaScript("localStorage.setItem('" + mykey + "','" + valueArr[index] + "');")
+                  .then(result => {
+                    console.log(`localStorage내부 setItem성공 key:${mykey}`)
+                  })
+                  .catch(error => {
+                    console.log("setLocalStorage함수 호출 시 ");
+                    console.log(error);
+                  })
+              }
+            })
+          } else {
+            return;
+          }
         }
-      }
-      clearDB();
-    })
+        clearDB();
+      })
+    } else {
+      db.find({}, (err: any, data: any) => {
+        if (err) {
+          console.log("setLocalStorage함수 내부 error :" + err)
+        }
+        else {
+          if (data[0] != null) {
+            keyArr = Object.keys(data[0]);
+            valueArr = Object.values(data[0])
+            if (keyArr != null) {
+              keyArr.forEach((mykey: any, index: number) => {
+                if (mykey != "_id") {
+                  win.webContents.executeJavaScript("localStorage.setItem('" + mykey + "','" + valueArr[index] + "');")
+                    .then(result => {
+                      console.log(`localStorage내부 setItem성공 key:${mykey}`)
+                    })
+                    .catch(error => {
+                      console.log("setLocalStorage함수 호출 시 ");
+                      console.log(error);
+                    })
+                }
+              })
+            }
+          } else {
+            return;
+          }
 
-
+        }
+        clearDB();
+      })
+    }
   } else {
     console.log("db가 존재하지 않음")
     console.log(db)
   }
-}
-//DB 존재여부 검사 함수
-function loadDB(): any {
-  db.loadDatabase(function (err: any) {
-    console.log(err)
-    if (err) {
-      console.log("Users database error: " + err)
-      return false;
-    } else {
-      console.log("Users database loaded successfully")
-      return true;
-    }
-  })
-}
-
-//DB생성함수
-function createDB() {
-  db = new Datastore({ filename: `${app.getPath("userData")}/userStorage`, autoload: true })
-
-  // db.createTable(DBName, (succ: any) => {
-  //   if (succ) {
-  //     console.log("dataTable created successfully!")
-  //   } else {
-  //     console.log("error in Creating dataTable ")
-  //   }
-  // })
 }
 
 //DB 데이터 추가 함수
@@ -148,69 +149,64 @@ function clearDB() {
 }
 
 //브라우저가 종료되기 전 localStorage에 접근하고 DB에 
-function DBLogic() {
+function DBLogic(isOnlyVuex = false) {
   console.log("DBLogic진입")
 
 
   let length = 0;
   let t: any;
-  // const obj: any = null;
   let obj: any = {}
-
-  if (dataBahnWindow && dataBahnWindow.webContents) {
-    dataBahnWindow.webContents.executeJavaScript('localStorage.length', true)
+  if (isOnlyVuex == true) {
+    dataBahnWindow.webContents.executeJavaScript(`localStorage.getItem("vuex");`, true)
       .then(result => {
         console.log(result)
-        length = result;
-        dataBahnWindow.webContents.executeJavaScript('Object.keys(localStorage)', true)
-          .then(result => {
-            //console.log(result)
-            t = JSON.stringify(result);
-            t = t.split('[');
-            t = t[1].split(']')
-            t = t[0].split('"')
-            for (let i = 0; i < t.length; i++) {
-              if (i % 2 != 0) {
-                //console.log(t[i])
-                dataBahnWindow.webContents.executeJavaScript(`localStorage.getItem("${t[i]}");`, true)
-                  .then(result => {
-                    let keyname = t[i];
-                    obj[keyname] = result;
-                    if (i == t.length - 2) {
-                      insertDB(obj);
-                      //changeValue({ pet: 'dog' }, { pet: 'cat' })
-                    }
-                    // if (validDB()) {
-                    //   console.log("DB존재합니다 insert시작. . .")
-                    //   insertDB(obj);
-                    //   //changeValue('UserStorage', where, set)
-                    // }
-                    // else {
-                    //   console.log("DB존재하지 않습니다. create시작. . .")
-                    //   createDB();
-                    //   insertDB(obj);
-                    //   //changeValue('UserStorage', where, set)
-                    // }
-
-
-
-                  })
-                  .catch(error => console.log(error))
-              }
-
-            }
-
-
-          })
-          .catch(error => console.log(error));
+        if (result != null) {
+          let keyname = 'vuex';
+          obj[keyname] = result;
+          insertDB(obj);
+        } else {
+          return;
+        }
       })
-
-
+      .catch(error => console.log(error))
   } else {
-    console.log(" data bahn window 혹은 webcontents가 비어있습니다.")
+    if (dataBahnWindow && dataBahnWindow.webContents) {
+      dataBahnWindow.webContents.executeJavaScript('localStorage.length', true)
+        .then(result => {
+          console.log(result)
+          length = result;
+          dataBahnWindow.webContents.executeJavaScript('Object.keys(localStorage)', true)
+            .then(result => {
+              //console.log(result)
+              t = JSON.stringify(result);
+              t = t.split('[');
+              t = t[1].split(']')
+              t = t[0].split('"')
+              for (let i = 0; i < t.length; i++) {
+                if (i % 2 != 0) {
+                  //console.log(t[i])
+                  dataBahnWindow.webContents.executeJavaScript(`localStorage.getItem("${t[i]}");`, true)
+                    .then(result => {
+                      let keyname = t[i];
+                      obj[keyname] = result;
+                      if (i == t.length - 2) {
+                        insertDB(obj);
+                        // changeValue({ pet: 'dog' }, { pet: 'cat' })
+                        //console.log(db)
+
+                      }
+                    })
+                    .catch(error => console.log(error))
+                }
+
+              }
+            })
+            .catch(error => console.log(error));
+        })
+    } else {
+      console.log(" data bahn window 혹은 webcontents가 비어있습니다.")
+    }
   }
-
-
 }
 
 

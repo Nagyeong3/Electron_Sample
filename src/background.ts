@@ -9,145 +9,198 @@ import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 const { dialog } = require('electron')
 const isDevelopment = process.env.NODE_ENV !== "production";
 
-const db = require('electron-db');
+/**electron 내부 db 사용
+npm install electron-db --save**/
+// const db = require('electron-db');
+
+/**neDB 사용
+ * npm install nedb --save
+ * */
+const Datastore = require('nedb')
+let db = new Datastore({
+  filename: `${app.getPath("userData")}/userStorage`, autoload: true
+})
+
+/**electron localStorage접근
+npm install electron-browser-storage**/
+// const { localStorage } = require('electron-browser-storage')
+
 
 let dataBahnWindow: BrowserWindow;
 
+//localStorage 데이터를 없애고 DB에 있던 데이터를 집어 넣는 함수
+async function SetLocalStorage(win: BrowserWindow) {
 
+
+  //localStorage 비우기
+  await win.webContents.executeJavaScript("localStorage.clear()")
+    .catch(error => console.log(error));
+
+  //내가 원하는 값으로 localStorage세팅
+  if (db) {
+    console.log("db존재합니다 ")
+
+    db.find({}, (err: any, data: any) => {
+      if (err) {
+        console.log("setLocalStorage함수 내부 error :" + err)
+      }
+      else {
+        let keyArr = Object.keys(data[0]);
+        let valueArr = Object.values(data[0])
+        if (keyArr != null) {
+          let idx = 0;
+          keyArr.forEach(mykey => {
+            if (mykey != "_id") {
+              win.webContents.executeJavaScript("localStorage.setItem('" + mykey + "','" + valueArr[idx++] + "');")
+                .then(result => {
+                  console.log(`localStorage내부 setItem성공 key:${mykey}`)
+                })
+                .catch(error => {
+                  console.log("setLocalStorage함수 호출 시 ");
+                  console.log(error);
+                })
+            }
+
+          })
+        }
+      }
+      clearDB();
+    })
+
+
+  } else {
+    console.log("db가 존재하지 않음")
+    console.log(db)
+  }
+}
 //DB 존재여부 검사 함수
-function validDB(DBName: string) {
-  //console.log(db.valid('UserStorages'))
-  try {
-    if (db.valid(DBName)) {
-      console.log("valid");
+function loadDB(): any {
+  db.loadDatabase(function (err: any) {
+    console.log(err)
+    if (err) {
+      console.log("Users database error: " + err)
+      return false;
+    } else {
+      console.log("Users database loaded successfully")
       return true;
     }
-  } catch (e: any) {
-    console.log("unvalid");
-    return false;
-  }
+  })
 }
 
 //DB생성함수
-function createDB(DBName: string) {
-  db.createTable(DBName, (succ: any) => {
-    if (succ) {
-      console.log("dataTable successfully create!")
-    } else {
-      console.log("error in Creating dataTable ")
-    }
-  })
+function createDB() {
+  db = new Datastore({ filename: `${app.getPath("userData")}/userStorage`, autoload: true })
+
+  // db.createTable(DBName, (succ: any) => {
+  //   if (succ) {
+  //     console.log("dataTable created successfully!")
+  //   } else {
+  //     console.log("error in Creating dataTable ")
+  //   }
+  // })
 }
 
 //DB 데이터 추가 함수
-function insertDB(DBName: string, obj: Object) {
-
-  db.insertTableContent(DBName, obj, (ttt: any) => {
-    if (ttt) {
-      console.log("dataTable successfully insert!")
-      console.log("insert data : " + JSON.stringify(obj))
+function insertDB(obj: Object) {
+  db.insert(obj, function (err: any, newObj: any) {
+    if (err) {
+      console.log("function insertDB() Err :" + err)
+    } else {
+      console.log("data inserted successfully :" + JSON.stringify(newObj))
     }
-
   })
+
 }
 
 //DB데이터 수정 함수
-function changeValue(DBName: string, mykey: object, changeValue: Object) {
-  db.updateRow(DBName, mykey, changeValue, (succ: any, msg: any) => {
-    console.log("change value 확인")
-    console.log(succ)
-    if (succ) {
-      console.log("change success")
-      getDB();
+function changeValue(current_obj: object, new_obj: Object) {
+  db.update(current_obj, { $set: new_obj }, {}, function (err: any, numReplaced: any) {
+    if (err) {
+      console.log("changeValue err: " + err);
+
     } else {
-      console.log(msg)
+      console.log("data changed successfully! new_data: " + JSON.stringify(new_obj))
     }
   })
 
 }
 
 //DB내 정보 출력 함수
-function getDB() {
-  db.getAll('UserStorage', (succ: any, data: any) => {
-    console.log("DB에 저장된 data:  " + JSON.stringify(data))
+function showDB() {
+  console.log("showDB: ")
+  db.find({}, (err: any, data: any) => {
+    console.log(JSON.stringify(data))
   })
 }
 
-//DB레코드 삭제 함수
-function deleteRecords(id: number) {
-  db.deleteRow('UserStorage', { "id": id }, (succ: string) => {
-    console.log("data delete complete??")
-  })
-}
 
 //DBTable삭제 함수
-function clearTable(DBName: string) {
-  db.clearTable(DBName, (succ: string) => {
-    if (succ)
-      console.log("clear success")
-    getDB();
+function clearDB() {
+  db.remove({}, { multi: true }, function (err: any, numRemoved: any) {
+    //console.log(typeof (err))
+    if (err) {
+      console.log("clearDB() error : " + err)
+    } else {
+      console.log("successfully clearDB")
+      showDB();
+    }
   })
 }
 
+//브라우저가 종료되기 전 localStorage에 접근하고 DB에 
 function DBLogic() {
   console.log("DBLogic진입")
 
+
   let length = 0;
+  let t: any;
+  // const obj: any = null;
+  let obj: any = {}
 
-  type MyObject = {
-    key: string,
-    value: string,
-  }
-
-  const obj: MyObject = {
-    key: "vuex",
-    value: "null",
-  }
-
-  let where = { 'key': 'vuex' }
-  let set = { 'value': 'dogg' }
   if (dataBahnWindow && dataBahnWindow.webContents) {
     dataBahnWindow.webContents.executeJavaScript('localStorage.length', true)
       .then(result => {
-        //console.log(result)
+        console.log(result)
         length = result;
         dataBahnWindow.webContents.executeJavaScript('Object.keys(localStorage)', true)
           .then(result => {
             //console.log(result)
-            let str = JSON.stringify(result)
-            let splitted = str.split('[')
-
-            let s = splitted[1].split('"')
-
-            for (let i = 0; i < length * 2 + 1; i++) {
-
-              //console.log(dataBahnWindow.webContents)
-              if (s[i] == "vuex") {
-
-                dataBahnWindow.webContents.executeJavaScript('localStorage.getItem("vuex");', true)
+            t = JSON.stringify(result);
+            t = t.split('[');
+            t = t[1].split(']')
+            t = t[0].split('"')
+            for (let i = 0; i < t.length; i++) {
+              if (i % 2 != 0) {
+                //console.log(t[i])
+                dataBahnWindow.webContents.executeJavaScript(`localStorage.getItem("${t[i]}");`, true)
                   .then(result => {
-                    //console.log(result)
-
-                    obj.value = result;
-                    if (validDB('UserStorage')) {
-                      console.log("DB존재합니다 insert시작. . .")
-                      insertDB('UserStorage', obj);
-                      //changeValue('UserStorage', where, set)
+                    let keyname = t[i];
+                    obj[keyname] = result;
+                    if (i == t.length - 2) {
+                      insertDB(obj);
+                      //changeValue({ pet: 'dog' }, { pet: 'cat' })
                     }
-                    else {
-                      console.log("DB존재하지 않습니다. create시작. . .")
-                      createDB('UserStorage');
-                      insertDB('UserStorage', obj);
-                      //changeValue('UserStorage', where, set)
-                    }
+                    // if (validDB()) {
+                    //   console.log("DB존재합니다 insert시작. . .")
+                    //   insertDB(obj);
+                    //   //changeValue('UserStorage', where, set)
+                    // }
+                    // else {
+                    //   console.log("DB존재하지 않습니다. create시작. . .")
+                    //   createDB();
+                    //   insertDB(obj);
+                    //   //changeValue('UserStorage', where, set)
+                    // }
 
 
 
                   })
                   .catch(error => console.log(error))
-                return 0;
               }
+
             }
+
+
           })
           .catch(error => console.log(error));
       })
@@ -156,8 +209,6 @@ function DBLogic() {
   } else {
     console.log(" data bahn window 혹은 webcontents가 비어있습니다.")
   }
-
-
 
 
 }
@@ -192,8 +243,8 @@ async function createWindow() {
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
-    //await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
-    await win.loadURL("https://dev.data-bahn.com");
+    await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
+    //await win.loadURL("https://dev.data-bahn.com");
     if (!process.env.IS_TEST) win.webContents.openDevTools();
 
 
@@ -209,10 +260,11 @@ async function createWindow() {
     type: 'question',
     buttons: ['yes', 'no'],
     message: '정말 종료하시겠습니까?',
-
+    title: "dataBahn"
   }
   if (dataBahnWindow) {
-    dataBahnWindow.webContents.executeJavaScript("window.addEventListener('beforeunload',function(event){event.returnValue='exit?'})")
+    dataBahnWindow.webContents.executeJavaScript("window.addEventListener('beforeunload',function(event){event.returnValue='exit?'})", true).catch(error => console.log(error))
+
     dataBahnWindow.on('close', (event) => {
 
       //dataBahnWindow.webContents.executeJavaScript("alert('program exit')")
@@ -241,9 +293,11 @@ async function createWindow() {
 
 
 app.on("ready", async () => {
+  console.log("1")
   if (isDevelopment && !process.env.IS_TEST) {
 
     try {
+      console.log("2")
       await installExtension(VUEJS_DEVTOOLS);
       //vue 속성
       await installVueDevtools();
@@ -252,9 +306,28 @@ app.on("ready", async () => {
 
     }
   }
+  console.log("3")
   createWindow();
-  getDB();
-  clearTable('UserStorage')
+  console.log("4")
+  showDB();
+  console.log("5")
+
+
+  console.log("6")
+  if (BrowserWindow.getAllWindows().length === 0) {
+    console.log("length=0")
+  } else {
+    console.log("7")
+    var win = BrowserWindow.getAllWindows()[0];
+    console.log(BrowserWindow.getAllWindows().length)
+    SetLocalStorage(win)
+
+    //validDB();
+
+
+    console.log("8")
+
+  }
 
 
 
@@ -291,13 +364,14 @@ app.on("window-all-closed", () => {
 });
 
 
-app.on("browser-window-blur", () => {
-  console.log("blur")
-})
+// app.on("browser-window-blur", () => {
+//   console.log("blur")
 
-app.on("browser-window-focus", () => {
-  console.log("focus")
-})
+// })
+
+// app.on("browser-window-focus", () => {
+//   console.log("focus")
+// })
 
 app.on("activate", () => {
   // On macOS it's common to re-create a window in the app when the
@@ -306,12 +380,6 @@ app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
-  console.log("activate!!!!")
-  console.log("activate!!!!")
-
-  console.log("activate!!!!")
-
-  console.log("activate!!!!")
 
 });
 

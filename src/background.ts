@@ -388,8 +388,11 @@ autoUpdater.once('download-progress', (progressObj: any) => {
       progressBar.detail = `Value ${value} out of ${progressBar.getOptions().maxValue}...`;
     })
     .on('completed', function () {
+
       console.info(`completed...`);
       progressBar.detail = 'Task completed. Exiting...';
+      progressBar.setCompleted();
+      progressBar.close();
 
     })
     .on('aborted', function () {
@@ -404,8 +407,8 @@ autoUpdater.once('download-progress', (progressObj: any) => {
 });
 //다운로드 완료되면 업데이트
 autoUpdater.on('update-downloaded', () => {
-  progressBar.setCompleted();
-  progressBar.close();
+  // progressBar.setCompleted();
+  // progressBar.close();
   dialog
     .showMessageBox({
       type: 'info',

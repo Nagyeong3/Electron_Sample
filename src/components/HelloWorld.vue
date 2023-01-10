@@ -104,10 +104,51 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
+import { ipcRenderer } from "electron";
 
+let version: any;
+let status: any;
 @Component
 export default class HelloWorld extends Vue {
   @Prop() private msg!: string;
+  // data() {
+  //   return {
+  //     version: "",
+  //     status: "",
+  //     message: "업그레이드버전이 있습니다. 프로그램을 재 시작합니다...",
+  //   };
+  // }
+  // methods() {
+  //   ipcRenderer.send("app_version");
+  //   ipcRenderer.on("app_version", (event, arg) => {
+  //     console.log("version" + arg.version);
+  //     version = arg.version;
+  //     ipcRenderer.removeAllListeners("app_version");
+  //   });
+  //   ipcRenderer.on("checking-for-update", () => {
+  //     console.log("checking-for-update");
+  //     status = "checking-for-update";
+  //     ipcRenderer.removeAllListeners("checking-for-update");
+  //   });
+  //   ipcRenderer.on("update-available", () => {
+  //     console.log("update-available");
+  //     status = "update-available";
+  //     ipcRenderer.removeAllListeners("update-available");
+  //   });
+  //   ipcRenderer.on("update-not-available", () => {
+  //     console.log("update-not-available");
+  //     status = "update-not-available";
+  //     ipcRenderer.removeAllListeners("update-not-available");
+  //   });
+  //   ipcRenderer.on("update-downloaded", () => {
+  //     console.log("update-downloaded");
+  //     status = "update-downloaded";
+  //     ipcRenderer.removeAllListeners("update-downloaded");
+  //   });
+  // }
+  // restart() {
+  //   ipcRenderer.send("restart_app");
+  // }
 }
 </script>
 

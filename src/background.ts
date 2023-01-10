@@ -2,11 +2,10 @@
 
 
 /**electron 렌더러 프로세스 생성 -> BrowserWindow객체 사용**/
-import { app, protocol, BrowserWindow, nativeImage, Menu } from "electron";
+import { app, protocol, BrowserWindow, nativeImage, Menu, ipcMain } from "electron";
 import { createProtocol, installVueDevtools } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 
-import { version } from "vue/types/umd";
 
 var CircularJSON = require('circular-json');
 const { dialog } = require('electron')
@@ -233,6 +232,29 @@ function setLocalStorage(win: BrowserWindow, isOnlyVuex = false) {
   }
 }
 
+function showMessageBoxToExit() {
+  let image = nativeImage.createFromPath("/Users/A/src/electron-sample/public/dataBahnIcon.png")
+
+  const ExitOptions = {
+    type: 'question',
+    buttons: ['yes', 'no'],
+    message: '정말 종료하시겠습니까?',
+    title: "dataBahn",
+    icon: image
+  }
+  //dataBahnWindow.webContents.executeJavaScript("alert('program exit')")
+  //정말로 종료하시겠습니까? 확인 ->
+  dialog.showMessageBox(ExitOptions).then(function (res) {
+    if (res.response == 1) {  //아니오
+      console.log("showmessage response 1")
+    } else {  //예
+      console.log("showmessage response 0")
+      dataBahnWindow.destroy();
+      app.quit();
+    }
+  })
+
+}
 
 
 async function createWindow() {
@@ -266,8 +288,8 @@ async function createWindow() {
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
-    //await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
-    await win.loadURL("https://dev.data-bahn.com");
+    await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
+    //await win.loadURL("https://dev.data-bahn.com");
     //if (!process.env.IS_TEST)
     //win.webContents.openDevTools();
 
@@ -284,30 +306,15 @@ async function createWindow() {
   // let image = nativeImage.createFromPath("/Users/A/src/electron-sample/src/dataBahnIcon.png")
 
 
-  const options = {
-    type: 'question',
-    buttons: ['yes', 'no'],
-    message: '정말 종료하시겠습니까?',
-    title: "dataBahn",
-    icon: image
-  }
+
+
   if (dataBahnWindow) {
     dataBahnWindow.webContents.executeJavaScript("window.addEventListener('beforeunload',function(event){event.returnValue='exit?'})", true)
       .catch(error => console.log("createWindow() 내부 addEventListener " + error))
 
     dataBahnWindow.on('close', (event) => {
 
-      //dataBahnWindow.webContents.executeJavaScript("alert('program exit')")
-      //정말로 종료하시겠습니까? 확인 ->
-      dialog.showMessageBox(options).then(function (res) {
-        if (res.response == 1) {  //아니오
-          console.log("showmessage response 1")
-        } else {  //예
-          console.log("showmessage response 0")
-          dataBahnWindow.destroy();
-          app.quit();
-        }
-      })
+      showMessageBoxToExit();
       try {
         setWebViewLocalStorageToDB(true);
       } catch (error) {
@@ -320,6 +327,98 @@ async function createWindow() {
   }
 }
 
+// 업데이트 오류시
+autoUpdater.on('error', function (error: any) {
+  //win.webContents.send('error')
+  console.error('error', error);
+});
+
+// 업데이트 체크
+autoUpdater.on('checking-for-update', () => {
+  //win.webContents.send('checking-for-update')
+  console.log('checking-for-update');
+
+});
+
+// 업데이트할 내용이 있을 때
+autoUpdater.on('update-available', () => {
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: 'Update available',
+      message:
+        'A new version of Project is available. Do you want to update now?',
+      buttons: ['Update', 'Later'],
+    })
+    .then((result) => {
+      const buttonIndex = result.response;
+
+      if (buttonIndex === 0) autoUpdater.downloadUpdate();
+    });
+});
+
+// 업데이트할 내용이 없을 때
+autoUpdater.on('update-not-available', () => {
+  //win.webContents.send('update-not-available')
+  console.log('update-not-available');
+  const options = {
+    type: 'question',
+    message: '앱 버전이 최신입니다.',
+    title: "dataBahn",
+  }
+  dialog.showMessageBox(options)
+});
+let progressBar: any;
+
+autoUpdater.once('download-progress', (progressObj: any) => {
+
+  let log_message = 'Downloaded ' + progressObj.percent + '%';
+  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+  progressBar = new ProgressBar({
+    indeterminate: false,
+    text: 'Downloading...',
+    detail: "Wait"
+  });
+
+  progressBar
+    .on("progress", function (value: any) {
+      progressBar.detail = `Value ${value} out of ${progressBar.getOptions().maxValue}...`;
+    })
+    .on('completed', function () {
+      console.info(`completed...`);
+      progressBar.detail = 'Task completed. Exiting...';
+      const options = {
+        type: 'question',
+        message: 'progressBar completed진입',
+        title: "dataBahn",
+      }
+      dialog.showMessageBox(options)
+    })
+    .on('aborted', function () {
+      progressBar.detail = 'Task aborted. . .';
+      console.info(`aborted...`);
+    });
+  setInterval(function () {
+    if (!progressBar.isCompleted()) {
+      progressBar.value += 1;
+    }
+  }, 20);
+});
+//다운로드 완료되면 업데이트
+autoUpdater.on('update-downloaded', () => {
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: 'Update ready(update-downloaded진입)',
+      message: 'Install & restart now?',
+      buttons: ['Restart', 'Later'],
+    })
+    .then((result) => {
+      const buttonIndex = result.response;
+
+      if (buttonIndex === 0) autoUpdater.quitAndInstall(false, true);
+    });
+});
 
 app.on("ready", async () => {
   // console.log("1")
@@ -361,7 +460,7 @@ app.on("ready", async () => {
       {
         label: 'Exit',
         submenu: [
-          { role: 'quit', accelerator: 'Ctrl+W' }
+          { role: 'quit', accelerator: 'Ctrl+Q' }
         ]
       },
       {
@@ -382,7 +481,10 @@ app.on("ready", async () => {
           },
           {
             label: "Check for Updates...", role: 'help',
-            click: autoUpdater.checkForUpdates()
+            click: async () => {
+              autoUpdater.checkForUpdates()
+
+            }
           },
 
         ]
@@ -425,61 +527,6 @@ app.on("ready", async () => {
 
 
 
-let progressBar: any;
-
-/* 업데이트가 가능한지 확인하는 부분이다.
-업데이트가 가능한 경우 팝업이 뜨면서 업데이트를 하겠냐고 묻는다.
-Update를 클릭하면 업데이트 가능한 파일을 다운로드 받는다. */
-autoUpdater.on('update-available', () => {
-  dialog
-    .showMessageBox({
-      type: 'info',
-      title: 'Update available',
-      message:
-        'A new version of Project is available. Do you want to update now?',
-      buttons: ['Update', 'Later'],
-    })
-    .then((result) => {
-      const buttonIndex = result.response;
-
-      if (buttonIndex === 0) autoUpdater.downloadUpdate();
-    });
-});
-
-/* progress bar가 없으면 업데이트를 다운받는 동안 사용자가 그 내용을 알 수 없기 때문에
-progress bar는 꼭 만들어준다. */
-autoUpdater.once('download-progress', (progressObj: object) => {
-  progressBar = new ProgressBar({
-    text: 'Downloading...',
-    detail: 'Downloading...',
-  });
-
-  progressBar
-    .on('completed', function () {
-      console.info(`completed...`);
-      progressBar.detail = 'Task completed. Exiting...';
-    })
-    .on('aborted', function () {
-      console.info(`aborted...`);
-    });
-});
-
-// 업데이트를 다운받고 나면 업데이트 설치 후 재시작을 요청하는 팝업이 뜬다.
-autoUpdater.on('update-downloaded', () => {
-  progressBar.setCompleted();
-  dialog
-    .showMessageBox({
-      type: 'info',
-      title: 'Update ready',
-      message: 'Install & restart now?',
-      buttons: ['Restart', 'Later'],
-    })
-    .then((result) => {
-      const buttonIndex = result.response;
-
-      if (buttonIndex === 0) autoUpdater.quitAndInstall(false, true);
-    });
-});
 app.on("before-quit", () => {
   //setWebViewLocalStorageToDB();
   console.log("before-quit")

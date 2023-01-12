@@ -2,11 +2,11 @@
 
 
 /**electron 렌더러 프로세스 생성 -> BrowserWindow객체 사용**/
-import { app, protocol, BrowserWindow, nativeImage, Menu, ipcMain } from "electron";
+import { app, protocol, BrowserWindow, nativeImage, Menu } from "electron";
 import { createProtocol, installVueDevtools } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 
-
+var path = require('path');
 var CircularJSON = require('circular-json');
 const { dialog } = require('electron')
 const isDevelopment = process.env.NODE_ENV !== "production";
@@ -17,9 +17,8 @@ const ProgressBar = require('electron-progressbar');
 npm install electron-db --save**/
 // const db = require('electron-db');
 
-/**neDB 사용
- * npm install nedb --save
- * */
+/********neDB 사용********
+*npm install nedb --save*/
 const Datastore = require('nedb')
 let db = new Datastore({
   filename: `${app.getPath("userData")}/userStorage`, autoload: true
@@ -27,12 +26,10 @@ let db = new Datastore({
 
 
 /**contextMenu */
-contextMenu({
-  prepend: (defaultActions: any, parameters: any, browserWindow: BrowserWindow) => [
+contextMenu({})
 
-  ]
 
-})
+
 
 let dataBahnWindow: BrowserWindow;
 
@@ -255,63 +252,14 @@ function showMessageBoxForExit() {
   })
 
 }
-function executeProgressBar() {
-  let progressBar: any; //update 진행 상황 check progressBar
 
-  autoUpdater.once('download-progress', (progressObj: any) => {
-
-    let log_message = 'Downloaded ' + progressObj.percent + '%';
-    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-    progressBar = new ProgressBar({
-      indeterminate: false,
-      text: 'Downloading...',
-      detail: "Wait"
-    });
-
-    progressBar
-      .on("progress", function (value: any) {
-        progressBar.detail = `Value ${value} out of ${progressBar.getOptions().maxValue}...`;
-      })
-      .on('completed', function () {
-
-        console.info(`completed...`);
-        progressBar.detail = 'Task completed. Exiting...';
-        //progressBar.setCompleted();
-        // progressBar.close();
-        autoUpdater.on('update-downloaded', () => {
-          progressBar.setCompleted();
-          //progressBar.close();
-          dialog
-            .showMessageBox({
-              type: 'info',
-              title: 'Update ready',
-              message: 'Install & restart now?',
-              buttons: ['Restart', 'Later'],
-            })
-            .then((result) => {
-              const buttonIndex = result.response;
-              if (buttonIndex === 0) autoUpdater.quitAndInstall(false, true);
-            })
-            .catch(error => dialog.showErrorBox('Error', 'Failed to install updates: ' + error))
-        });
-      })
-      .on('aborted', function () {
-        progressBar.detail = 'Task aborted. . .';
-        console.info(`aborted...`);
-      });
-    setInterval(function () {
-      if (!progressBar.isCompleted()) {
-        progressBar.value += 1;
-      }
-    }, 20);
-  });
-}
 
 async function createWindow() {
   let image = nativeImage.createFromPath("/Users/A/src/electron-sample/public/dataBahnIcon.png")
 
+
   const win = new BrowserWindow({
-    width: 900,
+    width: 1900,
     height: 600,
     //최소 크기조정
     minHeight: 220,
@@ -330,8 +278,7 @@ async function createWindow() {
         .ELECTRON_NODE_INTEGRATION as unknown as boolean,
       contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION,
 
-    },
-    //frame: false
+    }
   });
 
 
@@ -388,7 +335,9 @@ autoUpdater.on('checking-for-update', () => {
   //win.webContents.send('checking-for-update')
   console.log('checking-for-update');
 });
+
 let progressBar: any; //update 진행 상황 check progressBar
+
 // 업데이트할 내용이 있을 때
 autoUpdater.on('update-available', () => {
   let image = nativeImage.createFromPath("/Users/A/src/electron-sample/public/dataBahnIcon.png")
@@ -408,11 +357,13 @@ autoUpdater.on('update-available', () => {
 });
 //progressBar
 autoUpdater.once('download-progress', (progressObj: any) => {
+  let image = nativeImage.createFromPath("/Users/A/src/electron-sample/public/dataBahnIcon.png")
 
   progressBar = new ProgressBar({
     Title: "Wait",
     text: 'Wait...',
-    detail: "새로운 버전을 받아오는 중입니다."
+    detail: "새로운 버전을 받아오는 중입니다.",
+    icon: image
   });
 
   progressBar
@@ -420,10 +371,8 @@ autoUpdater.once('download-progress', (progressObj: any) => {
       //progressBar.detail = `Value ${value} out of ${progressBar.getOptions().maxValue}...`;
     })
     .on('completed', function () {
-
       console.info(`completed...`);
       progressBar.detail = 'Task completed. Exiting...';
-
     })
     .on('aborted', function () {
       progressBar.detail = 'Task aborted. . .';
@@ -651,5 +600,4 @@ if (isDevelopment) {
     });
   }
 }
-
 

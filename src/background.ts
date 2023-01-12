@@ -2,7 +2,7 @@
 
 
 /**electron 렌더러 프로세스 생성 -> BrowserWindow객체 사용**/
-import { app, protocol, BrowserWindow, nativeImage, Menu } from "electron";
+import { app, protocol, BrowserWindow, nativeImage, Menu, remote } from "electron";
 import { createProtocol, installVueDevtools } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 
@@ -259,7 +259,7 @@ async function createWindow() {
 
 
   const win = new BrowserWindow({
-    width: 1900,
+    width: 900,
     height: 600,
     //최소 크기조정
     minHeight: 220,
@@ -468,7 +468,7 @@ app.on("ready", async () => {
         label: 'Service',
         submenu: [
           {
-            label: "Version", role: 'help',
+            label: "Current Version", role: 'help',
             click: async () => {
               const options = {
                 type: 'question',
@@ -487,7 +487,21 @@ app.on("ready", async () => {
 
             }
           },
+          { type: 'separator' },
+          {
+            label: "Version History", role: 'help',
+            click: async () => {
+              const options = {
+                type: 'info',
+                icon: image,
+                message: 'App Version: ' + app.getVersion() + '\nDifferences from the previous version: DeskTop shortcut added.',
+                title: "Version History",
+              }
+              dialog.showMessageBox(options)
+            }
 
+
+          }
         ]
       },
       {

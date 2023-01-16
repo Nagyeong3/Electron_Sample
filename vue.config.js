@@ -29,7 +29,7 @@ module.exports = {
                 "pkg": {
                     "allowAnywhere": true,
                 },
-                publish: ['github']
+                publish: ["github", "bitbucket"]
             },
 
         }

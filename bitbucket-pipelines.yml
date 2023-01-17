@@ -1,0 +1,28 @@
+pipelines:
+  default:
+  - parallel:
+      
+      - step:
+          name: Build and test
+          image: node:10.15.0
+          caches:
+            - node
+          script:
+            #- npm cache clean --force
+            #- rm -rf ./node_modules
+            #- rm -rf ./package-lock.json
+            #- npm install -g n
+            #- npm install -g @vue/cli@4.5.4
+            - n 14.16.1
+            #- n prune
+            - npm install -g npm@6.14.12
+
+            - npm test
+            - npm i fork-ts-checker-webpack-plugin
+            #- npm run serve
+            - npm run electron:build
+
+          artifacts: # defining the artifacts to be passed to each future step.
+             download: true # do not download artifacts in this step
+             paths: # defining artifacts to be passed to each future step
+                - dist_electron/DataBahn Setup 0.4.4.exe

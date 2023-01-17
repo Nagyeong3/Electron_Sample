@@ -30,7 +30,6 @@ contextMenu({})
 
 
 
-
 let dataBahnWindow: BrowserWindow;
 
 // Scheme must be registered before the app is ready

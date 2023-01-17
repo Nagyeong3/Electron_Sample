@@ -8,6 +8,9 @@ module.exports = {
                 win: {
                     "target": ["nsis"],
                     icon: 'public/icon.png',
+                    // publish:
+                    //     -bitbucket
+                    //     -github
                     //"requestedExecutionLevel": "requireAdministrator"
                 },
                 "nsis": {
@@ -29,7 +32,7 @@ module.exports = {
                 "pkg": {
                     "allowAnywhere": true,
                 },
-                publish: ["github", "bitbucket"]
+                publish: ["bitbucket", "github"]
             },
 
         }

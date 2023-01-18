@@ -1,12 +1,15 @@
 {
   "name": "DataBahn",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "private": true,
   "scripts": {
+    "release": "electron-builder",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "electron:build": "vue-cli-service electron:build",
+    "build:win": "npm run build:win32 && npm run build:win64",
+    "build:win32": "build --win --ia32",
+    "build:win64": "build --win --x64",
     "electron:serve": "vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps"
@@ -49,5 +52,9 @@
     "typescript": "~4.1.5",
     "vue-cli-plugin-electron-builder": "~2.1.1",
     "vue-template-compiler": "^2.6.11"
+  },
+  "build": {
+    "productName": "HelloElectron",
+    "assar": true
   }
 }

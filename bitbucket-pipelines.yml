@@ -1,34 +1,45 @@
 pipelines:
-  default:
+
+  custom:
+    customPipelineWithRunnerAndCache:
+      - parallel:
+        - step:
+            name: Step 1
+            runs-on:
+              - 'windows'
+            script:
+              - node -v
+              - npm -v
+              - yarn -v
+              - yarn install
+              #- echo "This step will run on a self hosted windows infrastructure.";
+              #- npm install -g n
+              #- npm install -g @vue/cli@4.5.4
+              #- n 14.16.1
+              #- n prune
+              #- npm install -g npm@6.14.12
+
+              #- npm test
+              #- npm i fork-ts-checker-webpack-plugin
+              #- npm run serve
+              #- git tag v0.4.7
+              #- npm run build:win
+              - yarn build:win
+            artifacts: # defining the artifacts to be passed to each future step.
+                  download: true # do not download artifacts in this step
+                  paths: # defining artifacts to be passed to each future step
+                      - dist_electron/DataBahn Setup 0.4.8.exe
+            caches:
+               - bundler
+        - step:
+            script:
+              - pipe: atlassian/bitbucket-upload-file:0.3.4
+                variables:
+                  BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                  BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+                  FILENAME: 'package.json'
+definitions:
+  caches:
+    bundler: vendor/bundle
+             
   
-      - step:
-          name: Build and test
-          image: node:10.15.0
-          caches:
-            - node
-          script:
-            - sudo add-apt-repository ppa:ubuntu-wine/ppa -y
-            - sudo apt-get update
-            - sudo apt-get install --no-install-recommends -y wine1.8
-            - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-            - echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
-            - sudo apt-get update
-            - sudo apt-get install --no-install-recommends -y mono-devel ca-certificates-mono
-            #- npm cache clean --force
-            #- rm -rf ./node_modules
-            #- rm -rf ./package-lock.json
-            - npm install -g n
-            - npm install -g @vue/cli@4.5.4
-            - n 14.16.1
-            - n prune
-            - npm install -g npm@6.14.12
-            - npm i --save-dev electron-builder
-            - npm test
-            - npm i fork-ts-checker-webpack-plugin
-            #- npm run serve
-            #- git tag v0.4.7 
-            - npm run deploy:win32
-          artifacts: # defining the artifacts to be passed to each future step.
-             download: true # do not download artifacts in this step
-             paths: # defining artifacts to be passed to each future step
-                - dist_electron/**

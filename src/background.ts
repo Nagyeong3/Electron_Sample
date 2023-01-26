@@ -317,13 +317,13 @@ async function createWindow() {
     console.log("win 객체가 비어있습니다.")
   }
 }
-// autoUpdater.setFeedURL({
-//   provider: 'github',
-//   repo: 'REPOSITORY_NAME',
-//   owner: 'OWNER_OF_REPOSITORY',
-//   private: true,
-//   token: '<PERSONAL_ACCESS_TOKEN_REFERENCE>'
-// })
+autoUpdater.setFeedURL({
+  provider: 'github',
+  repo: 'ElectronSample',
+  owner: 'nagyeongkim',
+  private: true,
+  token: '2r9c8oFEgS8yA9Uzdqmv'
+})
 // 업데이트 오류
 autoUpdater.on('error', function (error: any) {
   //win.webContents.send('error')

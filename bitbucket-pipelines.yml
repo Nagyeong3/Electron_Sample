@@ -1,6 +1,6 @@
 pipelines:
-    tags:
-      'release-0.4.9data'
+    #tags:
+      #'release-0.4.9data'
     custom:
       customPipelineWithRunnerAndCache:
         - parallel:
@@ -21,7 +21,7 @@ pipelines:
               #- npm install -g npm@6.14.12
 
               #- npm test
-              #- npm i fork-ts-checker-webpack-plugin
+              #- npm i fork-ts-checker-wymlebpack-plugin
               #- npm run serve
        
               #- npm run build:win

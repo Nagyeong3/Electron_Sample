@@ -1,8 +1,9 @@
 pipelines:
-
-  custom:
-    customPipelineWithRunnerAndCache:
-      - parallel:
+    tags:
+      'release-0.4.9data'
+    custom:
+      customPipelineWithRunnerAndCache:
+        - parallel:
         - step:
             name: Step 1
             runs-on:
@@ -12,7 +13,7 @@ pipelines:
               - npm -v
               - yarn -v
               - yarn install
-              #- echo "This step will run on a self hosted windows infrastructure.";
+            
               #- npm install -g n
               #- npm install -g @vue/cli@4.5.4
               #- n 14.16.1
@@ -22,22 +23,22 @@ pipelines:
               #- npm test
               #- npm i fork-ts-checker-webpack-plugin
               #- npm run serve
-              #- git tag v0.4.7
+       
               #- npm run build:win
-              - yarn build:win
+              - yarn build:win64
+              #- curl -X POST "https://nagyeongkim:ATBBgKXndRYzF2fhJU7taTGVHWdz2FF6D738@api.bitbucket.org/2.0/repositories/ElectronSample/downloads"
+              #- curl -X POST "https://nagyeongkim:ATBBgKXndRYzF2fhJU7taTGVHWdz2FF6D738@api.bitbucket.org/2.0/repositories/nagyeongkim/75730c96-a703-46ae-afc8-ae7ac4d3bbbf/downloads"
+  
+              - curl -H @{"Authorization" = "Bearer 2r9c8oFEgS8yA9Uzdqmv"} -Method POST -Infile "C:\Users\A\atlassian\temp\0c3704cf-d84b-5e40-aff1-7674fc5493c4\1674698112340\build\dist_electron\DataBahn Setup 0.4.9.exe" -Uri 'https://bitbucket.org/nagyeongkim/electronsample/downloads'
+              #- curl -H @{"nagyeongkim" = "ATBBgKXndRYzF2fhJU7taTGVHWdz2FF6D738"} -Method POST -Infile "C:\Users\A\atlassian\temp\0c3704cf-d84b-5e40-aff1-7674fc5493c4\1674176332916\build\dist_electron\DataBahn Setup 0.4.9.exe" -Uri 'https://bitbucket.org/nagyeongkim/electronsample/downloads'
+
+              
             artifacts: # defining the artifacts to be passed to each future step.
                   download: true # do not download artifacts in this step
                   paths: # defining artifacts to be passed to each future step
-                      - dist_electron/DataBahn Setup 0.4.8.exe
+                      - dist_electron/DataBahn Setup 0.4.9.exe
             caches:
                - bundler
-        - step:
-            script:
-              - pipe: atlassian/bitbucket-upload-file:0.3.4
-                variables:
-                  BITBUCKET_USERNAME: $BITBUCKET_USERNAME
-                  BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
-                  FILENAME: 'package.json'
 definitions:
   caches:
     bundler: vendor/bundle

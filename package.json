@@ -1,7 +1,7 @@
 {
   "name": "DataBahn",
   "author": "nagyeong",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "private": true,
   "scripts": {
     "release": "electron-builder",

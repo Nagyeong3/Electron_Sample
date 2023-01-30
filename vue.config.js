@@ -30,6 +30,8 @@ module.exports = {
                     "allowAnywhere": true,
                 },
                 publish: ['github']
+
+
             },
 
         }

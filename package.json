@@ -54,5 +54,9 @@
     "typescript": "~4.1.5",
     "vue-cli-plugin-electron-builder": "~2.1.1",
     "vue-template-compiler": "^2.6.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nagyeong3/Electron_Sample.git"
   }
 }

@@ -2,7 +2,7 @@
 
 
 /**electron 렌더러 프로세스 생성 -> BrowserWindow객체 사용**/
-import { app, protocol, BrowserWindow, nativeImage, Menu, remote } from "electron";
+import { app, protocol, BrowserWindow, nativeImage, Menu } from "electron";
 import { createProtocol, installVueDevtools } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 
@@ -27,6 +27,7 @@ let db = new Datastore({
 
 /**contextMenu */
 contextMenu({})
+
 
 
 
@@ -317,13 +318,7 @@ async function createWindow() {
     console.log("win 객체가 비어있습니다.")
   }
 }
-autoUpdater.setFeedURL({
-  provider: 'github',
-  repo: 'ElectronSample',
-  owner: 'nagyeongkim',
-  private: true,
-  token: '2r9c8oFEgS8yA9Uzdqmv'
-})
+
 // 업데이트 오류
 autoUpdater.on('error', function (error: any) {
   //win.webContents.send('error')
@@ -619,4 +614,3 @@ if (isDevelopment) {
     });
   }
 }
-
